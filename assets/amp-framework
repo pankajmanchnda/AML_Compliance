@@ -1,0 +1,707 @@
+import { useState } from “react”;
+
+const layers = [
+{
+id: “regulatory”,
+code: “L1”,
+label: “Regulatory Foundation”,
+color: “#C8A84B”,
+icon: “⚖”,
+subtitle: “The Legal Perimeter”,
+description: “Map every applicable obligation before a single line of tech is written. Non-compliance here voids everything downstream.”,
+nonAI: [
+{
+name: “FinCEN BSA Program”,
+detail: “Written AML policy, designated BSA Officer, independent audit cycle, ongoing training program — all statutorily required for every MSB and VASP.”,
+action: “Draft & register”,
+priority: “MANDATORY”
+},
+{
+name: “OFAC SDN & Consolidated Sanctions Lists”,
+detail: “Subscribe to OFAC’s daily-updated XML feeds. All wallets, counterparties, and beneficial owners must be screened before onboarding and at every transaction.”,
+action: “Live feed integration”,
+priority: “MANDATORY”
+},
+{
+name: “FATF Travel Rule (Rule 31 CFR 1010.410)”,
+detail: “Originator and beneficiary information must travel with every virtual asset transfer ≥ $3,000. Implement IVMS101 data standard for interoperability.”,
+action: “Protocol adoption”,
+priority: “MANDATORY”
+},
+{
+name: “State MSB Licensing Matrix”,
+detail: “Map all 50-state licensing requirements. Nevada, California, and New York (BitLicense) have distinct thresholds. Use NMLS for multi-state filings.”,
+action: “Licensing tracker”,
+priority: “MANDATORY”
+},
+{
+name: “CTR / SAR Filing Thresholds”,
+detail: “CTR: cash transactions ≥ $10,000. SAR: suspicious activity ≥ $5,000. 30-day filing window for SARs; 15 days for time-sensitive. Retain records 5 years.”,
+action: “Threshold engine”,
+priority: “MANDATORY”
+}
+],
+ai: [
+{
+name: “Regulatory Change Intelligence”,
+detail: “NLP agents continuously monitor FinCEN, OFAC, FATF, and SEC rule releases. Auto-flag policy gaps and generate change-impact summaries for the BSA Officer.”,
+tech: “LLM + RAG pipeline”,
+model: “GPT-4o / Claude”
+},
+{
+name: “Policy Q&A Assistant”,
+detail: “Internal chatbot trained on your AML policy, FinCEN guidance, and FAQs. Compliance staff get instant, citable answers without emailing the BSA Officer for every question.”,
+tech: “Fine-tuned LLM”,
+model: “Claude Haiku”
+}
+]
+},
+{
+id: “kyc”,
+code: “L2”,
+label: “KYC / CDD / EDD”,
+color: “#4B8FC8”,
+icon: “🪪”,
+subtitle: “Know Your Customer Stack”,
+description: “The onboarding gate. Risk-tier every customer at intake. CDD for standard, EDD for high-risk, Simplified DD for very low-risk retail. No gaps.”,
+nonAI: [
+{
+name: “Identity Document Verification”,
+detail: “Collect government-issued ID (passport, DL, national ID). Verify authenticity via MRZ parsing, barcode, and hologram check. Vendors: Jumio, Onfido, Persona, Stripe Identity.”,
+action: “SDK integration”,
+priority: “HIGH”
+},
+{
+name: “Liveness Detection”,
+detail: “Biometric selfie match against ID photo. 3D liveness prevents spoofing via printed photos or deepfakes. Required for remote onboarding.”,
+action: “Biometric check”,
+priority: “HIGH”
+},
+{
+name: “Beneficial Ownership (CDD Rule)”,
+detail: “For legal entities: identify all individuals owning ≥25% equity OR a single control person. Collect name, DOB, address, ID, TIN. FinCEN CDD Rule is explicit.”,
+action: “UBO form + verification”,
+priority: “MANDATORY”
+},
+{
+name: “PEP & Adverse Media Screening”,
+detail: “Screen all customers and UBOs against Politically Exposed Persons lists and global adverse media databases. Vendors: Refinitiv World-Check, Dow Jones, LexisNexis.”,
+action: “API screening”,
+priority: “HIGH”
+},
+{
+name: “Wallet Address Due Diligence”,
+detail: “For crypto customers: verify self-hosted wallet ownership via micro-deposit or signed message proof. Screen deposit/withdrawal addresses via blockchain analytics.”,
+action: “Proof-of-ownership flow”,
+priority: “HIGH”
+}
+],
+ai: [
+{
+name: “AI Document Intelligence”,
+detail: “OCR + vision models extract and validate all fields from ID documents. Cross-reference extracted data against authoritative databases. Flag inconsistencies (font anomalies, metadata mismatches) for human review.”,
+tech: “Computer Vision + OCR”,
+model: “AWS Textract / Google Vision”
+},
+{
+name: “Dynamic Risk Scoring Engine”,
+detail: “ML model assigns a 0–100 risk score at onboarding using 50+ features: nationality, PEP status, source of funds, transaction history, geography, entity type, industry. Score updates continuously.”,
+tech: “Gradient Boosting / XGBoost”,
+model: “Custom trained”
+},
+{
+name: “NLP Adverse Media Mining”,
+detail: “Continuously crawl global news in 40+ languages. Entity recognition links articles to customer profiles. Sentiment and relevance scoring filters noise from true adverse signals.”,
+tech: “NER + Sentiment NLP”,
+model: “spaCy + LLM reranker”
+}
+]
+},
+{
+id: “txn”,
+code: “L3”,
+label: “Transaction Monitoring”,
+color: “#C84B4B”,
+icon: “📡”,
+subtitle: “Real-Time & Retrospective Surveillance”,
+description: “The operational core. Every on-chain and off-chain transaction is screened, scored, and either cleared, flagged, or blocked — in milliseconds.”,
+nonAI: [
+{
+name: “Blockchain Analytics Platform”,
+detail: “Integrate Chainalysis Reactor, Elliptic, or TRM Labs. These map the entire transaction graph — identifying mixer usage, darknet market exposure, sanctions wallet proximity, and ransomware trails.”,
+action: “API + webhook”,
+priority: “MANDATORY”
+},
+{
+name: “Rule-Based Alert Engine”,
+detail: “Deterministic rules: structuring detection (sub-$10K deposits in sequence), velocity checks (>$X in 24h), round-dollar amounts, dormant account reactivation, high-risk jurisdiction transfers.”,
+action: “Rules YAML config”,
+priority: “MANDATORY”
+},
+{
+name: “OFAC Real-Time Screening”,
+detail: “Every transaction origin/destination address and counterparty name screened against OFAC SDN list before settlement. Hard block on matches. Fuzzy match threshold configurable.”,
+action: “Pre-settlement gate”,
+priority: “MANDATORY”
+},
+{
+name: “Travel Rule Message Broker”,
+detail: “IVMS101 payload transmitted peer-to-peer via protocol (Notabene, Sygna, VerifyVASP). Originator data sent on outbound; beneficiary data validated on inbound before crediting.”,
+action: “Travel Rule protocol”,
+priority: “HIGH”
+},
+{
+name: “Case Management System”,
+detail: “All alerts flow into a case queue (Actimize, Quantexa, or open-source equivalent). Analysts work, document, escalate, or close cases. Full audit trail with timestamps.”,
+action: “Case workflow tool”,
+priority: “HIGH”
+}
+],
+ai: [
+{
+name: “Behavioral Anomaly Detection”,
+detail: “Unsupervised ML (autoencoders, isolation forests) models each customer’s baseline behavior. Flags deviations in amount, frequency, geography, counterparty mix — without predefined rules. Catches novel typologies.”,
+tech: “Unsupervised ML”,
+model: “Autoencoder / Isolation Forest”
+},
+{
+name: “Graph Neural Network (GNN) Analysis”,
+detail: “Maps transaction networks as graphs. Detects layering rings, circular fund flows, smurfing networks, and structuring collusion invisible to per-transaction rules.”,
+tech: “Graph ML”,
+model: “GraphSAGE / Neo4j GDS”
+},
+{
+name: “SAR Narrative Generator”,
+detail: “When an analyst decides to file a SAR, the AI drafts the FinCEN-formatted narrative using transaction data, customer profile, and alert context. Analyst reviews, edits, approves. Saves 2–4 hours per SAR.”,
+tech: “LLM + structured prompting”,
+model: “Claude / GPT-4o”
+},
+{
+name: “False Positive Reducer”,
+detail: “Supervised classifier trained on historical analyst decisions (filed vs. closed). Scores each new alert with a probability of being a true positive. Prioritizes the queue and reduces analyst fatigue.”,
+tech: “Supervised Classification”,
+model: “LightGBM / Random Forest”
+}
+]
+},
+{
+id: “blockchain”,
+code: “L4”,
+label: “On-Chain Intelligence”,
+color: “#4BC84B”,
+icon: “⛓”,
+subtitle: “Digital Asset–Specific Controls”,
+description: “Traditional AML tools miss the on-chain dimension. This layer is unique to VASPs and digital asset startups — and it’s where most gaps exist.”,
+nonAI: [
+{
+name: “Multi-Chain Address Labeling”,
+detail: “Maintain or subscribe to a labeled address database covering Bitcoin, Ethereum, Solana, Tron, and all major L2s. Labels identify exchanges, mixers, darknet markets, ransomware operators, and sanctioned entities.”,
+action: “Database subscription”,
+priority: “HIGH”
+},
+{
+name: “DeFi Protocol Risk Classification”,
+detail: “Not all DeFi is equal. Classify protocols by KYC status, smart contract audit history, and OFAC exposure. Flag transactions involving unvetted bridges, privacy protocols (Tornado Cash, Railgun), and non-compliant DEXs.”,
+action: “Protocol registry”,
+priority: “MEDIUM”
+},
+{
+name: “NFT & Token Layering Controls”,
+detail: “NFT wash-trading and rapid token swaps are used for layering. Monitor for NFT round-trip trades, flash loan sequences, and high-frequency DEX swaps that suggest fund movement vs. genuine trading.”,
+action: “Pattern rules”,
+priority: “MEDIUM”
+},
+{
+name: “Hot/Cold Wallet Segregation”,
+detail: “Operational wallets (hot) must be segregated from customer fund wallets. Sweep protocols, signing quorums, and wallet labeling must be documented and auditable.”,
+action: “Wallet governance SOP”,
+priority: “HIGH”
+}
+],
+ai: [
+{
+name: “Mixer / Tumbler Detection”,
+detail: “ML classifier identifies mixer-usage patterns: CoinJoin clusters, equal-output transactions, peel chains, and chain-hopping sequences. Works even on obfuscated flows where direct links are broken.”,
+tech: “Graph Classification”,
+model: “Custom GNN”
+},
+{
+name: “Smart Contract Risk Analyzer”,
+detail: “Static analysis + LLM audit of smart contract code. Flags rug-pull patterns, admin key risks, mint/pause functions, and upgradeability proxies that could enable fund theft.”,
+tech: “Static Analysis + LLM”,
+model: “Slither + Claude”
+},
+{
+name: “Cross-Chain Tracing”,
+detail: “Bridges break the transaction trail. AI agents follow funds across chains by correlating timing, amounts, bridge contract events, and known bridge wallet clusters.”,
+tech: “Multi-chain graph ML”,
+model: “Custom pipeline”
+}
+]
+},
+{
+id: “reporting”,
+code: “L5”,
+label: “Regulatory Reporting & Filing”,
+color: “#9B4BC8”,
+icon: “📋”,
+subtitle: “SAR, CTR & Audit Automation”,
+description: “Getting the data right is step one. Filing it correctly, on time, every time — is step two. Automation eliminates the human bottleneck.”,
+nonAI: [
+{
+name: “BSA E-Filing System Integration”,
+detail: “Direct API or batch submission to FinCEN’s BSA E-Filing portal. SAR (FinCEN 111) and CTR (FinCEN 112) forms must match current schema versions. Validate before submission.”,
+action: “API integration”,
+priority: “MANDATORY”
+},
+{
+name: “SAR Decision Audit Trail”,
+detail: “Document every alert: who reviewed it, what was found, why filed or not filed. FinCEN examiners require this. Non-documented decisions = regulatory violation even if the underlying analysis was correct.”,
+action: “Case documentation SOP”,
+priority: “MANDATORY”
+},
+{
+name: “Record Retention System”,
+detail: “BSA requires 5-year retention for all transaction records, KYC files, SARs, CTRs, and correspondence. Immutable storage with access logs. Cloud: AWS S3 with Object Lock, or Azure Immutable Blob.”,
+action: “Immutable storage setup”,
+priority: “MANDATORY”
+},
+{
+name: “Examiner Readiness Package”,
+detail: “Pre-built report set for FinCEN/state examinations: risk assessment, policy docs, training records, SAR/CTR filing history, transaction sample, and independent audit report.”,
+action: “Report templates”,
+priority: “HIGH”
+}
+],
+ai: [
+{
+name: “Auto-SAR Drafting Engine”,
+detail: “Pulls alert data, customer profile, transaction timeline, and analyst notes. Structures them into FinCEN-compliant SAR narrative format. Dramatically reduces filing time and improves narrative quality.”,
+tech: “LLM + template engine”,
+model: “Claude Sonnet”
+},
+{
+name: “CTR Auto-Population”,
+detail: “When cash transaction ≥ $10,000 is detected, CTR form fields are auto-populated from customer KYC data and transaction records. Human approves and submits. Error rate near zero.”,
+tech: “Form automation”,
+model: “Rules + LLM QA”
+},
+{
+name: “Compliance Dashboard Intelligence”,
+detail: “Real-time KPIs: alert volume, SAR filing rate, false positive ratio, open case age, jurisdictional risk heatmap. AI surfaces anomalies in your own compliance metrics — detecting surveillance gaps.”,
+tech: “BI + Anomaly Detection”,
+model: “Custom analytics”
+}
+]
+},
+{
+id: “governance”,
+code: “L6”,
+label: “Governance & Continuous Improvement”,
+color: “#C87A4B”,
+icon: “🏛”,
+subtitle: “The Oversight Layer”,
+description: “The system must watch itself. Independent audit, model validation, staff training, and a feedback loop that makes the program smarter over time.”,
+nonAI: [
+{
+name: “Independent Annual AML Audit”,
+detail: “FinCEN requires independent testing of the entire AML program — not self-review. Engage a qualified third party (law firm, Big 4, or specialized compliance firm). Scope: policy, controls, systems, and sampling.”,
+action: “Annual engagement”,
+priority: “MANDATORY”
+},
+{
+name: “BSA Officer Accountability”,
+detail: “Designated BSA Officer must have direct board access, authority to halt transactions, and documented escalation paths. Role cannot be outsourced. Document their qualifications.”,
+action: “Role charter”,
+priority: “MANDATORY”
+},
+{
+name: “Staff AML Training Program”,
+detail: “Annual training for all employees; role-specific modules for compliance, ops, and customer-facing staff. Maintain completion records. Include red flag recognition and escalation procedures.”,
+action: “LMS integration”,
+priority: “MANDATORY”
+},
+{
+name: “Risk Assessment (Annual)”,
+detail: “Formal written enterprise-wide risk assessment covering: customer base, product/service risk, geographic exposure, delivery channels, and emerging typologies. Updated when material changes occur.”,
+action: “Risk matrix update”,
+priority: “MANDATORY”
+}
+],
+ai: [
+{
+name: “Model Risk Management (MRM)”,
+detail: “All AI models used in compliance must be validated, documented, version-controlled, and monitored for drift. Track precision/recall metrics over time. Retrain triggers when performance degrades.”,
+tech: “MLOps pipeline”,
+model: “MLflow / Weights & Biases”
+},
+{
+name: “AI Training Simulations”,
+detail: “Generate synthetic red-flag scenarios and new typology cases. Use them to train staff and validate that the AI models correctly flag them. Continuous red-teaming of the surveillance stack.”,
+tech: “Synthetic data + LLM”,
+model: “Claude + scenario engine”
+},
+{
+name: “Feedback Loop Engine”,
+detail: “Every analyst decision (file/close) flows back as labeled training data. Models are retrained quarterly. Alert rules are auto-tuned based on confirmed true-positive patterns.”,
+tech: “Active Learning ML”,
+model: “Custom pipeline”
+}
+]
+}
+];
+
+const techStack = [
+{ category: “Blockchain Analytics”, tools: [“Chainalysis”, “Elliptic”, “TRM Labs”, “Merkle Science”], type: “vendor” },
+{ category: “Identity / KYC”, tools: [“Persona”, “Onfido”, “Jumio”, “Stripe Identity”], type: “vendor” },
+{ category: “Sanctions & PEP Screening”, tools: [“Refinitiv World-Check”, “Dow Jones Risk”, “LexisNexis Bridger”], type: “vendor” },
+{ category: “Travel Rule Protocol”, tools: [“Notabene”, “Sygna Bridge”, “VerifyVASP”, “TRISA”], type: “vendor” },
+{ category: “Case Management”, tools: [“Actimize”, “Quantexa”, “NICE Actimize”, “ComplyAdvantage”], type: “vendor” },
+{ category: “AI / ML Infrastructure”, tools: [“AWS SageMaker”, “Vertex AI”, “Azure ML”, “MLflow”], type: “infra” },
+{ category: “Graph Database”, tools: [“Neo4j”, “Amazon Neptune”, “TigerGraph”], type: “infra” },
+{ category: “Data Storage & Retention”, tools: [“AWS S3 Object Lock”, “Azure Immutable Blob”, “PostgreSQL”], type: “infra” },
+{ category: “Regulatory Filing”, tools: [“FinCEN BSA E-Filing”, “NMLS”, “State portals”], type: “regulatory” },
+{ category: “Orchestration & Monitoring”, tools: [“Apache Kafka”, “Airflow”, “Datadog”, “PagerDuty”], type: “infra” },
+];
+
+const priorities = { MANDATORY: “#C84B4B”, HIGH: “#C8A84B”, MEDIUM: “#4B8FC8” };
+
+export default function AMLFramework() {
+const [activeLayer, setActiveLayer] = useState(“regulatory”);
+const [activeTab, setActiveTab] = useState(“nonAI”);
+const [stackFilter, setStackFilter] = useState(“all”);
+
+const layer = layers.find(l => l.id === activeLayer);
+const filteredStack = stackFilter === “all” ? techStack : techStack.filter(t => t.type === stackFilter);
+
+return (
+<div style={{
+fontFamily: “‘DM Mono’, ‘Courier New’, monospace”,
+background: “#0A0C10”,
+color: “#C9D1D9”,
+minHeight: “100vh”,
+padding: “0”,
+}}>
+<style>{`
+@import url(‘https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@400;600;700&display=swap’);
+
+```
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    .header-stripe {
+      background: linear-gradient(90deg, #0D1117 0%, #161B22 50%, #0D1117 100%);
+      border-bottom: 1px solid #30363D;
+      padding: 24px 32px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .layer-nav {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      border-bottom: 1px solid #30363D;
+      background: #0D1117;
+      padding: 0 24px;
+    }
+
+    .layer-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #8B949E;
+      padding: 14px 16px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .layer-btn:hover { color: #E6EDF3; }
+    .layer-btn.active { color: #E6EDF3; border-bottom-color: var(--layer-color); }
+
+    .tab-btn {
+      background: none;
+      border: 1px solid #30363D;
+      color: #8B949E;
+      padding: 8px 20px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .tab-btn:first-child { border-radius: 4px 0 0 4px; }
+    .tab-btn:last-child { border-radius: 0 4px 4px 0; }
+    .tab-btn.active { background: #161B22; color: #E6EDF3; border-color: #58A6FF; }
+
+    .card {
+      background: #0D1117;
+      border: 1px solid #21262D;
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: #30363D; }
+
+    .pill {
+      display: inline-block;
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 10px;
+      color: #8B949E;
+      margin: 2px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar { height: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #0A0C10; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #30363D; border-radius: 2px; }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid #21262D;
+    }
+    .flow-step:last-child { border-bottom: none; }
+
+    .stack-chip {
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #C9D1D9;
+      white-space: nowrap;
+    }
+  `}</style>
+
+  {/* Header */}
+  <div className="header-stripe">
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <span style={{ fontSize: 20 }}>🏴</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: "#C84B4B", letterSpacing: 3, fontWeight: 700, textTransform: "uppercase" }}>FinCEN Watchdog</span>
+        </div>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700, color: "#E6EDF3", letterSpacing: -0.5, lineHeight: 1.2 }}>
+          AML/BSA Compliance Automation Framework
+        </h1>
+        <p style={{ color: "#8B949E", fontSize: 12, marginTop: 6, letterSpacing: 0.3 }}>
+          Digital Assets & VASP · FCF Global Transactions · FinCEN | OFAC | FATF | BSA
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {["FinCEN", "OFAC", "FATF", "BSA", "KYC/AML", "Travel Rule"].map(t => (
+          <span key={t} className="badge" style={{ background: "#161B22", border: "1px solid #30363D", color: "#8B949E" }}>{t}</span>
+        ))}
+      </div>
+    </div>
+
+    {/* Program status bar */}
+    <div style={{ display: "flex", gap: 24, marginTop: 18, paddingTop: 16, borderTop: "1px solid #21262D", flexWrap: "wrap" }}>
+      {[
+        { label: "Framework Layers", value: "6" },
+        { label: "Control Categories", value: "40+" },
+        { label: "Mandatory Controls", value: "18" },
+        { label: "AI/ML Components", value: "16" },
+        { label: "Regulatory Bodies", value: "FinCEN · OFAC · FATF · State" },
+      ].map(s => (
+        <div key={s.label}>
+          <div style={{ fontSize: 18, fontWeight: 500, color: "#C8A84B", fontFamily: "'Space Grotesk', sans-serif" }}>{s.value}</div>
+          <div style={{ fontSize: 10, color: "#8B949E", letterSpacing: 0.5 }}>{s.label}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* Layer Navigation */}
+  <div className="layer-nav scrollbar-thin">
+    {layers.map(l => (
+      <button
+        key={l.id}
+        className={`layer-btn ${activeLayer === l.id ? "active" : ""}`}
+        style={{ "--layer-color": l.color }}
+        onClick={() => setActiveLayer(l.id)}
+      >
+        <span>{l.icon}</span>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: activeLayer === l.id ? 600 : 400 }}>
+          {l.code} · {l.label}
+        </span>
+      </button>
+    ))}
+  </div>
+
+  {/* Main Content */}
+  <div style={{ padding: "24px 32px", maxWidth: 1100 }}>
+
+    {/* Layer Header */}
+    <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #21262D" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <span style={{ fontSize: 28 }}>{layer.icon}</span>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, color: "#E6EDF3" }}>{layer.label}</h2>
+            <span className="badge" style={{ background: layer.color + "22", color: layer.color, border: `1px solid ${layer.color}55` }}>{layer.code}</span>
+          </div>
+          <p style={{ color: layer.color, fontSize: 12, marginTop: 2, letterSpacing: 0.5 }}>{layer.subtitle}</p>
+        </div>
+      </div>
+      <p style={{ color: "#8B949E", fontSize: 13, lineHeight: 1.6, maxWidth: 700 }}>{layer.description}</p>
+    </div>
+
+    {/* Tabs */}
+    <div style={{ display: "flex", gap: 0, marginBottom: 20 }}>
+      <button className={`tab-btn ${activeTab === "nonAI" ? "active" : ""}`} onClick={() => setActiveTab("nonAI")}>
+        ⚙ Non-AI Controls ({layer.nonAI.length})
+      </button>
+      <button className={`tab-btn ${activeTab === "ai" ? "active" : ""}`} onClick={() => setActiveTab("ai")}>
+        ◈ AI/ML Layer ({layer.ai.length})
+      </button>
+    </div>
+
+    {/* Non-AI Controls */}
+    {activeTab === "nonAI" && (
+      <div>
+        {layer.nonAI.map((item, i) => (
+          <div key={i} className="card">
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "#58A6FF", fontSize: 11, fontWeight: 500, minWidth: 20 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: "#E6EDF3" }}>{item.name}</h3>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span className="badge" style={{ background: priorities[item.priority] + "22", color: priorities[item.priority], border: `1px solid ${priorities[item.priority]}44` }}>
+                  {item.priority}
+                </span>
+                <span className="pill">{item.action}</span>
+              </div>
+            </div>
+            <p style={{ color: "#8B949E", fontSize: 12, lineHeight: 1.7, paddingLeft: 30 }}>{item.detail}</p>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* AI/ML Layer */}
+    {activeTab === "ai" && (
+      <div>
+        <div style={{ background: "#161B22", border: "1px solid #30363D", borderRadius: 6, padding: "10px 16px", marginBottom: 16, fontSize: 11, color: "#8B949E" }}>
+          ⚠ All AI/ML models used in AML decisions require <strong style={{ color: "#C8A84B" }}>Model Risk Management (MRM)</strong> documentation, performance monitoring, and independent validation per regulatory expectations.
+        </div>
+        {layer.ai.map((item, i) => (
+          <div key={i} className="card" style={{ borderLeft: `3px solid ${layer.color}` }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: layer.color, fontSize: 11, fontWeight: 500 }}>AI·{String(i + 1).padStart(2, "0")}</span>
+                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: "#E6EDF3" }}>{item.name}</h3>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <span className="pill">⚡ {item.tech}</span>
+                <span className="pill">🤖 {item.model}</span>
+              </div>
+            </div>
+            <p style={{ color: "#8B949E", fontSize: 12, lineHeight: 1.7, paddingLeft: 30 }}>{item.detail}</p>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Technology Stack Section */}
+    <div style={{ marginTop: 36, paddingTop: 28, borderTop: "1px solid #21262D" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+        <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 700, color: "#E6EDF3" }}>
+          🔧 Recommended Technology Stack
+        </h3>
+        <div style={{ display: "flex", gap: 0 }}>
+          {[["all", "All"], ["vendor", "SaaS Vendors"], ["infra", "Infrastructure"], ["regulatory", "Regulatory"]].map(([v, l]) => (
+            <button
+              key={v}
+              className={`tab-btn ${stackFilter === v ? "active" : ""}`}
+              style={{ fontSize: 10, padding: "6px 12px" }}
+              onClick={() => setStackFilter(v)}
+            >{l}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+        {filteredStack.map((cat, i) => (
+          <div key={i} className="card" style={{ margin: 0 }}>
+            <div style={{ fontSize: 10, color: "#8B949E", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>{cat.category}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {cat.tools.map(t => (
+                <span key={t} className="stack-chip">{t}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Workflow Orchestration */}
+    <div style={{ marginTop: 36, paddingTop: 28, borderTop: "1px solid #21262D" }}>
+      <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 700, color: "#E6EDF3", marginBottom: 4 }}>
+        ⚡ Transaction Compliance Workflow — End to End
+      </h3>
+      <p style={{ color: "#8B949E", fontSize: 12, marginBottom: 20 }}>How a single transaction flows through the full compliance stack in real time.</p>
+
+      {[
+        { step: "01", phase: "PRE-ONBOARDING", label: "Customer hits sign-up", action: "KYC + OFAC + PEP screening triggered. Risk score computed. Approved / Pending EDD / Rejected.", color: "#4B8FC8" },
+        { step: "02", phase: "ONBOARDING GATE", label: "Identity verified & risk-tiered", action: "CDD for standard risk. EDD workflow triggered for high-risk. Beneficial ownership collected for entities.", color: "#4B8FC8" },
+        { step: "03", phase: "TRANSACTION INITIATION", label: "Customer submits transaction", action: "Real-time OFAC screen on wallet/address. Blockchain analytics risk score fetched. Travel Rule payload prepared.", color: "#C8A84B" },
+        { step: "04", phase: "PRE-SETTLEMENT GATE", label: "Hard block or pass-through decision", action: "OFAC match → hard block + freeze. Blockchain risk > threshold → hold + alert. Clean → proceed to settlement.", color: "#C8A84B" },
+        { step: "05", phase: "SETTLEMENT", label: "Transaction clears", action: "Travel Rule message sent to beneficiary VASP. Transaction recorded with full metadata. CTR threshold check.", color: "#4BC84B" },
+        { step: "06", phase: "POST-TRANSACTION MONITORING", label: "Behavioral model updates", action: "Transaction added to customer behavior profile. Anomaly detection re-scores. Structuring pattern check across 24h/30d windows.", color: "#C87A4B" },
+        { step: "07", phase: "ALERT & CASE MANAGEMENT", label: "Alert triggered (if any)", action: "Alert queued in case management system. Analyst reviews within SLA. Decision documented: file SAR / close with notes.", color: "#C84B4B" },
+        { step: "08", phase: "REGULATORY FILING", label: "SAR/CTR auto-drafted", action: "AI drafts SAR narrative. BSA Officer reviews and approves. Filed to FinCEN BSA E-Filing within statutory deadline.", color: "#9B4BC8" },
+      ].map((step) => (
+        <div key={step.step} className="flow-step">
+          <div style={{ minWidth: 36, height: 36, borderRadius: "50%", background: step.color + "22", border: `1px solid ${step.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 500, color: step.color }}>
+            {step.step}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+              <span className="badge" style={{ background: step.color + "22", color: step.color, border: `1px solid ${step.color}44` }}>{step.phase}</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 600, color: "#E6EDF3" }}>{step.label}</span>
+            </div>
+            <p style={{ color: "#8B949E", fontSize: 12, lineHeight: 1.6 }}>{step.action}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Footer */}
+    <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #21262D", display: "flex", gap: 24, flexWrap: "wrap" }}>
+      <div style={{ fontSize: 10, color: "#484F58", letterSpacing: 0.5 }}>
+        FRAMEWORK VERSION 1.0 · FCF GLOBAL · AML/BSA DIGITAL ASSETS
+      </div>
+      <div style={{ fontSize: 10, color: "#484F58" }}>
+        Consult qualified BSA/AML counsel before implementation · This framework does not constitute legal advice
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+);
+}
